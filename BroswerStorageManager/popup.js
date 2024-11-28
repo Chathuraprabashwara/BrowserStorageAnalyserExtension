@@ -1,6 +1,7 @@
 let LocalStorageShow = true;
 let SessionStorageShow = true;
 
+
 //* Local Storage
 const catchLocalStorageBtn = document.getElementById('getLocalStorageButton');
 catchLocalStorageBtn.addEventListener('click', () => {
@@ -26,7 +27,6 @@ catchSessionStorageBtn.addEventListener('click', () => {
 	};
 	setStorage(data);
 });
-
 
 //*clear All
 const catchClearAllBtn = document.getElementById('clearAll');
@@ -56,18 +56,46 @@ function clearAllStorage() {
 	sessionStorage.clear();
 }
 
-
 //*remove specific item from Local Storage
 
+const handleremoveIconClick = (key, storage) => {
 
-catchLocalStorageBtn.addEventListener('click',(event)=>{
-    const closetIcon =event.target.closest('img')
-    if(closetIcon){
-        alert('closetIcon',closetIcon)
+    deleteKey=key
+    deleteStorage= storage
 
-    }
-})
+	chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+		// Execute the clear function in the content script context
+		chrome.scripting.executeScript(
+			{
+				target: { tabId: tabs[0].id },
+				func: executeRemoveFunction,
+                args: [key, storage],          // Arguments to pass into the function
 
+			},
+			() => {
+                console.log("testing")
+                const hideDiv = document.getElementById(`${key}div`)
+                console.log("hideDiv Id",`${key}div`)
+                hideDiv.style.display = 'none'
+			}
+		);
+	});
+};
+
+// The function that will execute inside the page context
+function executeRemoveFunction(key, storage) {
+	console.log('deleteStorage',key);
+	console.log('deleteKey',storage);
+
+			if (storage === 'LocalStorage') {
+					localStorage.removeItem(key);
+					console.log(`Item with key "${key}" removed from localStorage`);
+                  
+				} else  {
+					sessionStorage.removeItem(key);
+					console.log(`Item with key "${key}" removed from sessionStorage`);
+				} 
+}
 
 //* common function for get browser storage
 const setStorage = (data) => {
@@ -116,13 +144,12 @@ const setStorage = (data) => {
 				// Loop through the object
 				for (const key in StorageData) {
 					if (StorageData.hasOwnProperty(key)) {
-						
-                        //* Create a new element 
+						//* Create a new element
 						const container = document.createElement('div');
 						const p = document.createElement('p');
 						const space = document.createElement('p');
 						const textInput = document.createElement('input');
-						const removeICon = document.createElement('img');
+						const removeIcon = document.createElement('img');
 						const correctICon = document.createElement('img');
 						const iconContainer = document.createElement('div');
 
@@ -145,23 +172,27 @@ const setStorage = (data) => {
 						container.style.display = 'flex';
 						container.style.alignItems = 'center'; // Align items vertically centered
 						container.style.gap = '10px'; // Add space between elements (optional)
+                        container.id = `${fullText}div`
 
 						iconContainer.style.display = 'flex';
 						iconContainer.style.flexDirection = 'row';
 						iconContainer.style.gap = '11px';
 
-                        iconContainer.id ='iconsContainer'
+						iconContainer.id = 'iconsContainer';
 
-						removeICon.src = './icons/remove.svg';
-						removeICon.alt = 'removeIcon';
+						removeIcon.src = './icons/remove.svg';
+						removeIcon.alt = 'removeIcon';
+						removeIcon.id = fullText;
 
 						correctICon.src = './icons/correct.svg';
 						correctICon.alt = 'correctIcon';
 
-                        correctICon.addEventListener("click", () => handleRemoveIconClick(fullText));
+						// Add onClick event to the remove icon
+						removeIcon.addEventListener('click', function () {
+							handleremoveIconClick(removeIcon.id, ContenId); // Pass the unique ID to the function
+						});
 
-
-						iconContainer.append(removeICon, correctICon);
+						iconContainer.append(removeIcon, correctICon);
 
 						// Append p and input to the div
 						container.append(p, space, textInput, iconContainer);
